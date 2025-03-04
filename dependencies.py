@@ -29,10 +29,10 @@ from torch.utils.data import TensorDataset, DataLoader
 
 
 import itertools
-import torch
-from sklearn.model_selection import KFold
 from scipy.stats import pearsonr
 from concurrent.futures import ProcessPoolExecutor
+from scipy.stats import pearsonr
+
 
 
 
