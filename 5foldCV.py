@@ -6,7 +6,6 @@ load data
 '''
 
 data = pd.read_csv("fullDatasetSY.csv")
-data = data.sample(frac =1)
 
 '''
 isolate X and Y
