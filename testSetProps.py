@@ -4,7 +4,6 @@ exec(open("transformerBlocks_Test27.py").read())
 import concurrent.futures
 
 data = pd.read_csv("fullDatasetSY.csv")
-data = data.sample(frac =1)
 
 # Define the function that will process each test proportion
 
