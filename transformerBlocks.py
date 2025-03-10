@@ -139,3 +139,64 @@ class Transformer(nn.Module):
         pooled_output = weighted_output.mean(dim=1)
         output = self.fc(pooled_output)
         return output.squeeze(-1)
+
+def getWeights(xTrain,yTrain,xTest,yTest):
+
+    alpha_values = {}
+    params = [0.01, 0.1, 1, 10, 100, 1000]
+    for value in params:
+        LR = linear_model.Ridge(value)
+        LR.fit(X_train, y_train)
+        y_pred = LR.predict(X_test)
+        y_test = np.array(y_test)
+        alpha_values[value] = np.corrcoef(y_pred, y_test)[0, 1]
+        alpha_val = max(alpha_values, key=alpha_values.get)
+
+    # Ridge regression to get the coefficients (feature weights)
+    RR = linear_model.Ridge(alpha_val)
+    RR.fit(X_train, y_train)
+    coeffs = RR.coef_
+    coeffs = pd.DataFrame(coeffs).squeeze(1)
+    min_val = coeffs.min()
+    max_val = coeffs.max()
+    scaled_coeffs = (coeffs - min_val) / (max_val - min_val)
+    
+
+    feature_weights = torch.tensor(scaled_coeffs, dtype=torch.float32)
+    pooling_weights = torch.tensor(coeffs,dtype=torch.float32)
+    batch_size = 5
+    feature_weights = feature_weights.view(1, -1).expand(batch_size, -1)
+    pooling_weights = pooling_weights.view(1,-1).expand(batch_size,-1)
+
+    return feature_weights, pooling_weights
+
+def preprocess(data):
+    
+    data = data.sample(frac=1)
+    X = data.drop(["Unnamed: 0", "0", "1", "2", "3"], axis=1)
+    threshold = 0.01
+    X = X.drop(X.std()[X.std() < threshold].index.values, axis=1)
+    y = data["3"]
+    # Identify the number of unique tokens
+    unique = X.stack().nunique()
+    return X,y,unique
+
+def evaluateModel():
+    transformer.eval()
+    predictions = []
+    true_vals = []
+
+    with torch.no_grad():
+        for batch_x, batch_y in test_loader:
+            batch_y = batch_y.squeeze(-1)
+            preds = transformer(batch_x)
+            loss = criterion(preds, batch_y)
+            predictions.extend(preds.numpy())
+            true_vals.extend(batch_y.numpy())
+
+    accuracy, _ = pearsonr(predictions, true_vals)
+    values = np.column_stack((predictions, true_vals))
+    values = pd.DataFrame(values)
+    values.columns = ["pred", "true"]
+
+    return accuracy, values
