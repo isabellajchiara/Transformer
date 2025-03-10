@@ -67,38 +67,22 @@ def train_fold(fold, train_index, test_index, X, y, unique):
         current_lr = optimizer.param_groups[0]['lr']
         print(f"Fold {fold}, Epoch {epoch} | Train Loss: {avg_train_loss:.4f} | LR: {current_lr:.6f}")
 
-    # Test after training 
-    transformer.eval()
-    predictions = []
-    true_vals = []
-
-    with torch.no_grad():
-        for batch_x, batch_y in test_loader:
-            batch_y = batch_y.squeeze(-1)
-            preds = transformer(batch_x)
-            loss = criterion(preds, batch_y)
-            predictions.extend(preds.numpy())
-            true_vals.extend(batch_y.numpy())
-
-    accuracy, _ = pearsonr(predictions, true_vals)
-    values = np.column_stack((predictions, true_vals))
-    values = pd.DataFrame(values)
-    values.columns = ["pred", "true"]
-    values.to_csv(f"pred_true_SY_fold{fold}_CDBN_Test3.csv")
-   
-    # Save results for the best epoch
-    fold_result = accuracy
-
+    #save training behavior 
     loss_csv_file = f"SY_optim_loss_fold{fold}_CDBN_Test3.csv"
     with open(loss_csv_file, mode='w', newline='') as file:
         writer = csv.writer(file)
         writer.writerow(["Epoch", "Train Loss"])
         for i in range(len(loss_values)):
             writer.writerow([i + 1, loss_values[i]])
+            
+    # Test after training 
+    accuracy, values = evaluateModel()
+    
+    values.to_csv(f"pred_true_SY_fold{fold}_CDBN_Test3.csv")
 
     print(f"Finished fold {fold}")
 
-    return fold_result
+    return accuracy
 
 
 # Load and preprocess the data
@@ -123,11 +107,5 @@ with concurrent.futures.ProcessPoolExecutor() as executor:
 
 # Save accuracies for each fold
 mean_value = np.mean(cv_results)  # Calculate the mean
-mean_df = pd.DataFrame([mean_value], columns=["Mean"])  # Convert to a DataFrame
-mean_df.to_csv("SY_CV_Accuracy_CDBN.csv", index=False)  # Save to CSV
-
-
-
-
-    
-                     
+mean_df = pd.DataFrame(mean_value)  # Convert to a DataFrame
+mean_df.to_csv("SY_CV_Accuracy_CDBN.csv", index=False)  # Save to CSV           
