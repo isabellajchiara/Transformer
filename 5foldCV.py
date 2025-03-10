@@ -14,7 +14,6 @@ def train_fold(fold, train_index, test_index, X, y, unique):
 
 
     # Prepare tensors and dataloaders
-
     xTrain = pd.DataFrame(xTrain)
     yTrain = pd.DataFrame(yTrain)
     xTest = pd.DataFrame(xTest)
@@ -23,14 +22,12 @@ def train_fold(fold, train_index, test_index, X, y, unique):
     y_train_tensor = torch.tensor(yTrain.values, dtype=torch.float32)
     X_test_tensor = torch.tensor(xTest.values, dtype=torch.long)
     y_test_tensor = torch.tensor(yTest.values, dtype=torch.float32)
-
     train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
     test_dataset = TensorDataset(X_test_tensor, y_test_tensor)
-
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
 
-    # Transformer model definition
+    #Define transformer parameters
     src_vocab_size = int(unique)
     tgt_vocab_size = 1
     d_model = 200
@@ -41,7 +38,6 @@ def train_fold(fold, train_index, test_index, X, y, unique):
     dropout = 0.05
     criterion = lambda estimations, batch_y: focalLoss(beta=0.5, gamma=1, batch_y=batch_y, estimations=estimations)
     transformer = Transformer(src_vocab_size, tgt_vocab_size, d_model, num_heads, num_layers, d_ff, max_seq_length, dropout, feature_weights,pooling_weights)
-
     optimizer = torch.optim.Adam(transformer.parameters(), lr=0.0001)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
     transformer.apply(initialize_attention_weights)
@@ -67,7 +63,7 @@ def train_fold(fold, train_index, test_index, X, y, unique):
         current_lr = optimizer.param_groups[0]['lr']
         print(f"Fold {fold}, Epoch {epoch} | Train Loss: {avg_train_loss:.4f} | LR: {current_lr:.6f}")
 
-    #save training behavior 
+    #save training curve 
     loss_csv_file = f"SY_optim_loss_fold{fold}_CDBN_Test3.csv"
     with open(loss_csv_file, mode='w', newline='') as file:
         writer = csv.writer(file)
@@ -84,6 +80,7 @@ def train_fold(fold, train_index, test_index, X, y, unique):
 
     return accuracy
 
+''' above we defined a training function which will be used to run all 5 folds in parallel below'''
 
 # Load and preprocess the data
 data = pd.read_csv("fullDatasetSY.csv")
