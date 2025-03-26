@@ -25,7 +25,16 @@ def train_fold(fold, train_index, test_index, X, y, unique):
     max_seq_length = X.shape[1]
     dropout = 0.05
     criterion = lambda estimations, batch_y: focalLoss(beta=0.5, gamma=1, batch_y=batch_y, estimations=estimations)
-    transformer = Transformer(src_vocab_size, tgt_vocab_size, d_model, num_heads, num_layers, d_ff, max_seq_length, dropout, feature_weights,pooling_weights)
+    
+    transformer = Transformer(src_vocab_size,
+                              tgt_vocab_size, d_model, 
+                              num_heads, num_layers, 
+                              d_ff, 
+                              max_seq_length, 
+                              dropout, 
+                              feature_weights,
+                              pooling_weights)
+    
     optimizer = torch.optim.Adam(transformer.parameters(), lr=0.0001)
     scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=40, gamma=0.1)
     transformer.apply(initialize_attention_weights)
