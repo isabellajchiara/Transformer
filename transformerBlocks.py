@@ -200,3 +200,18 @@ def evaluateModel():
     values.columns = ["pred", "true"]
 
     return accuracy, values
+
+
+def createTensors(X_train, X_test, y_train,y_test):
+    X_train_tensor = torch.tensor(X_train.values, dtype=torch.long)
+    y_train_tensor = torch.tensor(y_train.values, dtype=torch.float32)
+    X_test_tensor = torch.tensor(X_test.values, dtype=torch.long)
+    y_test_tensor = torch.tensor(y_test.values, dtype=torch.float32)
+
+    train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
+    test_dataset = TensorDataset(X_test_tensor, y_test_tensor)
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
+
+    return train_loader, test_loader
