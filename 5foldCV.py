@@ -12,20 +12,8 @@ def train_fold(fold, train_index, test_index, X, y, unique):
     #compute feature weights using training data
     feature_weights,pooling_weights= getWeights(xTrain,yTrain,xTest,yTest)
 
-
     # Prepare tensors and dataloaders
-    xTrain = pd.DataFrame(xTrain)
-    yTrain = pd.DataFrame(yTrain)
-    xTest = pd.DataFrame(xTest)
-    yTest = pd.DataFrame(yTest)
-    X_train_tensor = torch.tensor(xTrain.values, dtype=torch.long)
-    y_train_tensor = torch.tensor(yTrain.values, dtype=torch.float32)
-    X_test_tensor = torch.tensor(xTest.values, dtype=torch.long)
-    y_test_tensor = torch.tensor(yTest.values, dtype=torch.float32)
-    train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
-    test_dataset = TensorDataset(X_test_tensor, y_test_tensor)
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
+    train_loader, test_loader = createTensors(X_train,X_test, y_train,y_test)
 
     #Define transformer parameters
     src_vocab_size = int(unique)
