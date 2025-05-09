@@ -69,7 +69,7 @@ class PositionalEncoding(nn.Module):
         position = torch.arange(0, max_seq_length, dtype=torch.float).unsqueeze(1)
         div_term = torch.exp(torch.arange(0, d_model, 2).float() * -(math.log(10000.0) / d_model))
         pe[:, 0::2] = torch.sin(position * div_term)
-        pe[:, 1::2] = torch.cos(position *s div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
         self.register_buffer('pe', pe.unsqueeze(0))
 
     def forward(self, x):
@@ -140,21 +140,22 @@ class Transformer(nn.Module):
         output = self.fc(pooled_output)
         return output.squeeze(-1)
 
-def getWeights(xTrain,yTrain,xTest,yTest):
+def getWeights(xTrain,yTrain,xTest,yTest,batch_size):
 
+    batch_size = batch_size
     alpha_values = {}
     params = [0.01, 0.1, 1, 10, 100, 1000]
     for value in params:
         LR = linear_model.Ridge(value)
-        LR.fit(X_train, y_train)
-        y_pred = LR.predict(X_test)
-        y_test = np.array(y_test)
-        alpha_values[value] = np.corrcoef(y_pred, y_test)[0, 1]
+        LR.fit(xTrain, yTrain)
+        y_pred = LR.predict(xTest)
+        yTest = np.array(yTest)
+        alpha_values[value] = np.corrcoef(y_pred, yTest)[0, 1]
         alpha_val = max(alpha_values, key=alpha_values.get)
 
     # Ridge regression to get the coefficients (feature weights)
     RR = linear_model.Ridge(alpha_val)
-    RR.fit(X_train, y_train)
+    RR.fit(xTrain, yTrain)
     coeffs = RR.coef_
     coeffs = pd.DataFrame(coeffs).squeeze(1)
     min_val = coeffs.min()
@@ -164,7 +165,6 @@ def getWeights(xTrain,yTrain,xTest,yTest):
 
     feature_weights = torch.tensor(scaled_coeffs, dtype=torch.float32)
     pooling_weights = torch.tensor(coeffs,dtype=torch.float32)
-    batch_size = 5
     feature_weights = feature_weights.view(1, -1).expand(batch_size, -1)
     pooling_weights = pooling_weights.view(1,-1).expand(batch_size,-1)
 
@@ -181,15 +181,15 @@ def preprocess(data):
     unique = X.stack().nunique()
     return X,y,unique
 
-def evaluateModel():
-    transformer.eval()
+def evaluateModel(model, loader):
+    model.eval()
     predictions = []
     true_vals = []
 
     with torch.no_grad():
-        for batch_x, batch_y in test_loader:
+        for batch_x, batch_y in loader:
             batch_y = batch_y.squeeze(-1)
-            preds = transformer(batch_x)
+            preds = model(batch_x)
             loss = criterion(preds, batch_y)
             predictions.extend(preds.numpy())
             true_vals.extend(batch_y.numpy())
@@ -202,13 +202,13 @@ def evaluateModel():
     return accuracy, values
 
 
-def createTensors(X_train, X_test, y_train,y_test):
-    X_train_tensor = torch.tensor(X_train.values, dtype=torch.long)
-    y_train_tensor = torch.tensor(y_train.values, dtype=torch.float32)
+def createTensors(xTrain, X_test, yTrain,y_test):
+    xTrain_tensor = torch.tensor(xTrain.values, dtype=torch.long)
+    yTrain_tensor = torch.tensor(yTrain.values, dtype=torch.float32)
     X_test_tensor = torch.tensor(X_test.values, dtype=torch.long)
     y_test_tensor = torch.tensor(y_test.values, dtype=torch.float32)
 
-    train_dataset = TensorDataset(X_train_tensor, y_train_tensor)
+    train_dataset = TensorDataset(xTrain_tensor, yTrain_tensor)
     test_dataset = TensorDataset(X_test_tensor, y_test_tensor)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=False, drop_last=True)
